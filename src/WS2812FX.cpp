@@ -109,14 +109,21 @@ void WS2812FX::setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
 
 void WS2812FX::setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
   if(IS_GAMMA) {
-    Adafruit_NeoPixel::setPixelColor(n, gamma8(r), gamma8(g), gamma8(b), gamma8(w));
+    Adafruit_NeoPixel::setPixelColor(getPixelPos(n), gamma8(r), gamma8(g), gamma8(b), gamma8(w));
   } else {
-    Adafruit_NeoPixel::setPixelColor(n, r, g, b, w);
+    Adafruit_NeoPixel::setPixelColor(getPixelPos(n), r, g, b, w);
   }
 }
 
+uint16_t WS2812FX::getPixelPos(uint16_t n) {
+  if(sizeof(num_map) > 0)
+    return num_map[n];
+  return n;
+}
+
 // custom setPixelColor() function that bypasses the Adafruit_Neopixel global brightness rigmarole
-void WS2812FX::setRawPixelColor(uint16_t n, uint32_t c) {
+void WS2812FX::setRawPixelColor(uint16_t np, uint32_t c) {
+  uint16_t n = getPixelPos(np);
   if (n < numLEDs) {
     uint8_t *p = (wOffset == rOffset) ? &pixels[n * 3] : &pixels[n * 4]; 
     uint8_t w = (uint8_t)(c >> 24), r = (uint8_t)(c >> 16), g = (uint8_t)(c >> 8), b = (uint8_t)c;
@@ -129,8 +136,9 @@ void WS2812FX::setRawPixelColor(uint16_t n, uint32_t c) {
 }
 
 // custom getPixelColor() function that bypasses the Adafruit_Neopixel global brightness rigmarole
-uint32_t WS2812FX::getRawPixelColor(uint16_t n) {
-  if (n >= numLEDs) return 0; // Out of bounds, return no color.
+uint32_t WS2812FX::getRawPixelColor(uint16_t np) {
+  if (np >= numLEDs) return 0; // Out of bounds, return no color.
+  uint16_t n = getPixelPos(np);
 
   if(wOffset == rOffset) { // RGB
     uint8_t *p = &pixels[n * 3]; 
@@ -144,8 +152,10 @@ uint32_t WS2812FX::getRawPixelColor(uint16_t n) {
 void WS2812FX::copyPixels(uint16_t dest, uint16_t src, uint16_t count) {
   uint8_t *pixels = getPixels();
   uint8_t bytesPerPixel = getNumBytesPerPixel(); // 3=RGB, 4=RGBW
-
-  memmove(pixels + (dest * bytesPerPixel), pixels + (src * bytesPerPixel), count * bytesPerPixel);
+  
+  //memmove(pixels + (dest * bytesPerPixel), pixels + (src * bytesPerPixel), count * bytesPerPixel);
+  for(uint16_t c = 0; c < count; c++)
+    setRawPixelColor(dest+(count-c)-1, getRawPixelColor(src+(count-c)-1));
 }
 
 // change the underlying Adafruit_NeoPixel pixels pointer (use with care)
@@ -655,6 +665,11 @@ uint32_t* WS2812FX::intensitySums() {
     if(bytesPerPixel == 4) intensities[3] += pixels[i + 3]; // for RGBW LEDs
   }
   return intensities;
+}
+
+void WS2812FX::setCustomMap(uint16_t* map)
+{
+  num_map = map;
 }
 
 /*

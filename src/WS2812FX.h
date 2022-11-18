@@ -238,6 +238,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       setPixels(uint16_t, uint8_t*),
       setRandomSeed(uint16_t),
       setExtDataSrc(uint8_t seg, uint8_t *src, uint8_t cnt),
+      setCustomMap(uint16_t*),
       show(void);
 
     bool
@@ -264,6 +265,7 @@ class WS2812FX : public Adafruit_NeoPixel {
       getNumBytesPerPixel(void);
 
     uint16_t
+      getPixelPos(uint16_t),
       random16(void),
       random16(uint16_t),
       getSpeed(void),
@@ -427,6 +429,7 @@ class WS2812FX : public Adafruit_NeoPixel {
     segment* _seg;                      // currently active segment (20 bytes)
     segment_runtime* _seg_rt;           // currently active segment runtime (16 bytes)
 
+    uint16_t* num_map;
     uint16_t _seg_len;                  // num LEDs in the currently active segment
 };
 
